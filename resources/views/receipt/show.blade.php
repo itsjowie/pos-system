@@ -6,6 +6,19 @@
 </head>
 
 <body class="bg-slate-950 text-white p-6">
+<div class="text-center mb-4">
+    <img src="/logo/mambuzi-logo.png"
+         class="h-20 mx-auto mb-3"
+         alt="Mambuzi Logo">
+
+    <h1 class="text-2xl font-bold text-green-400">
+        Mambuzi EATS & DINE
+    </h1>
+
+    <p class="text-gray-400">
+        Thank you for dining with us
+    </p>
+</div>
 
 <div class="max-w-xl mx-auto bg-slate-900 border border-slate-800 p-6 rounded-lg">
 
@@ -18,6 +31,7 @@
     <p><strong>Status:</strong> {{ $order->status }}</p>
     <p><strong>Payment:</strong> {{ $order->payment_method }}</p>
     <p><strong>Paid At:</strong> {{ $order->paid_at }}</p>
+    <p><strong>Date:</strong> {{ now()->format('d M Y H:i') }}</p>
 
     <hr class="my-4 border-slate-700">
 
