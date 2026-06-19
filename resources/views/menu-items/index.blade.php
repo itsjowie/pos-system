@@ -49,7 +49,9 @@
 </td>
 
                         <td class="p-2">
-                            {{ $item->name }}
+                            <a href="/add-to-cart/{{ $item->id }}" class="text-green-400 hover:underline">
+                           {{ $item->name }}
+</a>
                         </td>
 
                         <td class="p-2">

@@ -10,12 +10,13 @@ return new class extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('restaurant_table_id')
-                  ->constrained('restaurant_tables')
-                  ->onDelete('cascade');
+
+            $table->integer('table_id');
             $table->decimal('total', 10, 2)->default(0);
-            $table->string('payment_method')->nullable();
-            $table->string('status')->default('pending');
+
+            $table->string('status')->default('open'); 
+            // open | paid
+
             $table->timestamps();
         });
     }

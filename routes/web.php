@@ -1,12 +1,13 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\MenuItemController;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes (Mambuzi EATS & DINE POS)
+| ROOT
 |--------------------------------------------------------------------------
 */
 
@@ -15,9 +16,10 @@ Route::get('/', function () {
 });
 
 /*
-| Dashboard
+|--------------------------------------------------------------------------
+| DASHBOARD
+|--------------------------------------------------------------------------
 */
-use Illuminate\Support\Facades\DB;
 
 Route::get('/dashboard', function () {
 
@@ -28,20 +30,178 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 /*
-| Menu Management (POS CORE)
+|--------------------------------------------------------------------------
+| MENU ITEMS (POS CORE)
+|--------------------------------------------------------------------------
 */
-Route::resource('menu-items', MenuItemController::class)->middleware(['auth']);
+
+Route::resource('menu-items', MenuItemController::class)
+    ->middleware(['auth']);
 
 /*
-| Profile (Laravel default)
+|--------------------------------------------------------------------------
+| CART SYSTEM
+|--------------------------------------------------------------------------
 */
+
+Route::get('/add-to-cart/{id}', [MenuItemController::class, 'addToCart'])
+    ->middleware(['auth']);
+
+/*
+|--------------------------------------------------------------------------
+| ORDERS VIEW
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/orders', function () {
+
+    $orders = DB::table('orders')
+        ->where('status', 'open')
+        ->get();
+
+    return view('orders.index', compact('orders'));
+
+})->middleware(['auth']);
+
+/*
+|--------------------------------------------------------------------------
+| PAY ORDER
+|--------------------------------------------------------------------------
+*/
+
+Route::post('/pay-order/{orderId}', function ($orderId) {
+
+    $method = request('payment_method');
+
+    $order = DB::table('orders')->where('id', $orderId)->first();
+
+    if (!$order) {
+         return redirect('/orders');
+    }
+
+    DB::table('orders')
+        ->where('id', $orderId)
+        ->update([
+            'status' => 'paid',
+            'payment_method' => $method,
+            'paid_at' => now(),
+            'updated_at' => now()
+        ]);
+
+    DB::table('restaurant_tables')
+        ->where('id', $order->table_id)
+        ->update([
+            'status' => 'free',
+            'updated_at' => now()
+        ]);
+
+    session()->forget('active_table');
+
+    return redirect('/receipt/' . $orderId);
+
+})->middleware(['auth']);
+
+/*
+|--------------------------------------------------------------------------
+| CLOSE TABLE
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/close-table/{tableId}', function ($tableId) {
+
+    $order = DB::table('orders')
+        ->where('table_id', $tableId)
+        ->where('status', 'open')
+        ->first();
+
+    if ($order) {
+        DB::table('orders')
+            ->where('id', $order->id)
+            ->update([
+                'status' => 'paid',
+                'updated_at' => now()
+            ]);
+    }
+
+    DB::table('restaurant_tables')
+        ->where('id', $tableId)
+        ->update([
+            'status' => 'free',
+            'updated_at' => now()
+        ]);
+
+    session()->forget('active_table');
+
+    return redirect('/dashboard');
+
+})->middleware(['auth']);
+
+/*
+|--------------------------------------------------------------------------
+| TABLE SELECTION
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/select-table/{id}', function ($id) {
+
+    session(['active_table' => $id]);
+
+    return redirect()->route('dashboard');
+
+})->middleware(['auth', 'verified']);
+
+/*
+|--------------------------------------------------------------------------
+| RECEIPT SYSTEM
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/receipt/{orderId}', function ($orderId) {
+
+    $order = DB::table('orders')
+        ->where('id', $orderId)
+        ->first();
+
+    if (!$order) {
+        abort(404);
+    }
+
+    $items = DB::table('order_items')
+        ->join('menu_items', 'order_items.menu_item_id', '=', 'menu_items.id')
+        ->where('order_items.order_id', $orderId)
+        ->select(
+            'menu_items.name',
+            'order_items.price',
+            'order_items.quantity'
+        )
+        ->get();
+
+    return view('receipt.show', compact('order', 'items'));
+
+})->middleware(['auth']);
+
+/*
+|--------------------------------------------------------------------------
+| LOGIN SUCCESS
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/login-success', function () {
+    return view('auth.success');
+})->middleware(['auth']);
+
+/*
+|--------------------------------------------------------------------------
+| PROFILE
+|--------------------------------------------------------------------------
+*/
+
 Route::middleware('auth')->group(function () {
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
 });
-Route::get('/login-success', function () {
-    return view('auth.success');
-})->middleware('auth');
 
 require __DIR__.'/auth.php';

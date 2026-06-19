@@ -48,7 +48,64 @@ class MenuItemController extends Controller
     public function destroy($id)
     {
         DB::table('menu_items')->where('id', $id)->delete();
-
         return redirect('/menu-items');
+    }
+
+    public function addToCart($id)
+    {
+        $tableId = session('active_table');
+
+        if (!$tableId) {
+            return redirect()->back()->with('error', 'Select a table first');
+        }
+
+        $item = DB::table('menu_items')->where('id', $id)->first();
+
+        if (!$item) {
+            return redirect()->back();
+        }
+
+        // FIND OR CREATE ORDER
+        $order = DB::table('orders')
+            ->where('table_id', $tableId)
+            ->where('status', 'open')
+            ->first();
+
+        if (!$order) {
+            $orderId = DB::table('orders')->insertGetId([
+                'table_id' => $tableId,
+                'total' => 0,
+                'status' => 'open',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } else {
+            $orderId = $order->id;
+        }
+
+        // ADD ITEM
+        DB::table('order_items')->insert([
+            'order_id' => $orderId,
+            'menu_item_id' => $item->id,
+            'name' => $item->name,
+            'price' => $item->price,
+            'quantity' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // UPDATE TOTAL
+        $total = DB::table('order_items')
+            ->where('order_id', $orderId)
+            ->sum(DB::raw('price * quantity'));
+
+        DB::table('orders')
+            ->where('id', $orderId)
+            ->update([
+                'total' => $total,
+                'updated_at' => now()
+            ]);
+
+        return redirect()->back();
     }
 }
