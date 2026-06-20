@@ -10,6 +10,7 @@ class MenuItemController extends Controller
     public function index()
     {
         $items = DB::table('menu_items')->get();
+
         return view('menu-items.index', compact('items'));
     }
 
@@ -47,7 +48,10 @@ class MenuItemController extends Controller
 
     public function destroy($id)
     {
-        DB::table('menu_items')->where('id', $id)->delete();
+        DB::table('menu_items')
+            ->where('id', $id)
+            ->delete();
+
         return redirect('/menu-items');
     }
 
@@ -56,22 +60,27 @@ class MenuItemController extends Controller
         $tableId = session('active_table');
 
         if (!$tableId) {
-            return redirect()->back()->with('error', 'Select a table first');
+            return redirect()->back()
+                ->with('error', 'Select a table first');
         }
 
-        $item = DB::table('menu_items')->where('id', $id)->first();
+        $item = DB::table('menu_items')
+            ->where('id', $id)
+            ->first();
 
         if (!$item) {
             return redirect()->back();
         }
 
-        // FIND OR CREATE ORDER
+        // FIND EXISTING OPEN ORDER
         $order = DB::table('orders')
             ->where('table_id', $tableId)
             ->where('status', 'open')
             ->first();
 
+        // CREATE NEW ORDER IF NONE EXISTS
         if (!$order) {
+
             $orderId = DB::table('orders')->insertGetId([
                 'table_id' => $tableId,
                 'total' => 0,
@@ -79,11 +88,21 @@ class MenuItemController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+
+            // MARK TABLE AS OCCUPIED
+            DB::table('restaurant_tables')
+                ->where('id', $tableId)
+                ->update([
+                    'status' => 'occupied',
+                    'updated_at' => now(),
+                ]);
+
         } else {
+
             $orderId = $order->id;
         }
 
-        // ADD ITEM
+        // ADD ITEM TO ORDER
         DB::table('order_items')->insert([
             'order_id' => $orderId,
             'menu_item_id' => $item->id,
@@ -94,7 +113,7 @@ class MenuItemController extends Controller
             'updated_at' => now(),
         ]);
 
-        // UPDATE TOTAL
+        // RECALCULATE TOTAL
         $total = DB::table('order_items')
             ->where('order_id', $orderId)
             ->sum(DB::raw('price * quantity'));
@@ -103,7 +122,7 @@ class MenuItemController extends Controller
             ->where('id', $orderId)
             ->update([
                 'total' => $total,
-                'updated_at' => now()
+                'updated_at' => now(),
             ]);
 
         return redirect()->back();

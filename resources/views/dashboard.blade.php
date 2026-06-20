@@ -14,22 +14,38 @@
 
         <!-- LOGO -->
         <div class="p-5 border-b border-slate-800 flex items-center gap-3">
-            <img src="/logo/mambuzi-logo.png" class="h-12 w-12 object-contain rounded">
+            <img src="/logo/mambuzi-logo.png"
+                 class="h-12 w-12 object-contain rounded">
+
             <span class="text-green-400 font-bold text-lg">
                 Mambuzi POS
             </span>
         </div>
 
-        <!-- NAV -->
-        <a href="/dashboard" class="p-4 hover:bg-gray-800">Dashboard</a>
-        <a href="/menu-items" class="p-4 hover:bg-gray-800">Menu Items</a>
-        <a href="/orders" class="p-4 hover:bg-gray-800">Orders</a>
-        <a href="/orders" class="p-4 hover:bg-gray-800">Payments</a>
+        <!-- NAVIGATION -->
+        <a href="/dashboard" class="p-4 hover:bg-gray-800">
+            Dashboard
+        </a>
+
+        <a href="/menu-items" class="p-4 hover:bg-gray-800">
+            Menu Items
+        </a>
+
+        <a href="/orders" class="p-4 hover:bg-gray-800">
+            Orders
+        </a>
+
+        <a href="/orders" class="p-4 hover:bg-gray-800">
+            Payments
+        </a>
 
         <!-- LOGOUT -->
-        <form method="POST" action="{{ route('logout') }}" class="mt-auto">
+        <form method="POST"
+              action="{{ route('logout') }}"
+              class="mt-auto">
             @csrf
-            <button class="w-full text-left p-4 hover:bg-red-600 bg-red-700">
+
+            <button class="w-full text-left p-4 bg-red-700 hover:bg-red-600">
                 Logout
             </button>
         </form>
@@ -41,7 +57,10 @@
 
         <!-- TOP BAR -->
         <div class="bg-slate-900/60 backdrop-blur border-b border-slate-800 p-4 flex justify-between">
-            <h1 class="font-bold text-green-400">Dashboard</h1>
+
+            <h1 class="font-bold text-green-400">
+                Dashboard
+            </h1>
 
             @if(session('active_table'))
                 <div class="text-green-400 font-bold">
@@ -52,6 +71,7 @@
                     No table selected
                 </div>
             @endif
+
         </div>
 
         <!-- TABLES -->
@@ -65,29 +85,62 @@
 
                 @foreach($tables as $table)
 
-                    <a href="/select-table/{{ $table->id }}"
-                       class="block p-4 rounded-lg border transition
-                       {{ session('active_table') == $table->id
-                            ? 'bg-green-600 border-green-400'
-                            : 'bg-slate-900 border-slate-800 hover:bg-slate-800' }}">
+                    @if($table->status == 'occupied')
 
-                        <div class="font-bold text-white">
-                            {{ $table->table_number }}
+                        <div class="p-4 rounded-lg border border-red-500 bg-red-900">
+
+                            <div class="font-bold text-white">
+                                {{ $table->table_number }}
+                            </div>
+
+                            <div class="text-sm text-red-200 mt-1">
+                                Occupied
+                            </div>
+
+                            <div class="text-xs mt-2 text-red-300">
+                                🔴 Customer Dining
+                            </div>
+
                         </div>
 
-                        <div class="text-sm text-gray-300 mt-1">
-                            {{ $table->status }}
-                        </div>
+                    @elseif(session('active_table') == $table->id)
 
-                        <div class="text-xs mt-2">
-                            @if(session('active_table') == $table->id)
+                        <div class="p-4 rounded-lg border border-green-400 bg-green-600">
+
+                            <div class="font-bold text-white">
+                                {{ $table->table_number }}
+                            </div>
+
+                            <div class="text-sm mt-1">
+                                {{ $table->status }}
+                            </div>
+
+                            <div class="text-xs mt-2">
                                 🟢 Active Table
-                            @else
-                                Tap to select
-                            @endif
+                            </div>
+
                         </div>
 
-                    </a>
+                    @else
+
+                        <a href="/select-table/{{ $table->id }}"
+                           class="block p-4 rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800">
+
+                            <div class="font-bold text-white">
+                                {{ $table->table_number }}
+                            </div>
+
+                            <div class="text-sm text-gray-300 mt-1">
+                                {{ $table->status }}
+                            </div>
+
+                            <div class="text-xs mt-2">
+                                Tap to select
+                            </div>
+
+                        </a>
+
+                    @endif
 
                 @endforeach
 
