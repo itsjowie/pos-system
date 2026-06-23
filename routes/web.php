@@ -1,7 +1,4 @@
 <?php
-
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\MenuItemController;
 
@@ -56,7 +53,7 @@ Route::get('/add-to-cart/{id}', [MenuItemController::class, 'addToCart'])
 Route::get('/orders', function () {
 
     $orders = DB::table('orders')
-        ->where('status', 'open')
+        ->whereIn('status', ['open', 'preparing', 'ready'])
         ->get();
 
     return view('orders.index', compact('orders'));
@@ -111,7 +108,7 @@ Route::get('/close-table/{tableId}', function ($tableId) {
 
     $order = DB::table('orders')
         ->where('table_id', $tableId)
-        ->where('status', 'open')
+        ->whereIn('status', ['open', 'preparing', 'ready'])
         ->first();
 
     if ($order) {
@@ -203,5 +200,83 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
 });
+use Illuminate\Support\Facades\Auth;
+use App\Models\Order;
 
+Route::get('/kitchen', function () {
+
+    if (!Auth::check()) {
+        return redirect('/login');
+    }
+
+    if (Auth::user()->user_type !== 'kitchen') {
+        abort(403);
+    }
+
+    $orders = DB::table('orders')
+    ->whereIn('status', [
+        'open',
+        'preparing',
+        'ready'
+    ])
+    ->latest()
+    ->get();
+
+    return view('kitchen.index', compact('orders'));
+});
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
+
+Route::get('/kitchen/preparing/{id}', function ($id) {
+
+    DB::table('orders')
+        ->where('id', $id)
+        ->update([
+            'status' => 'preparing',
+            'updated_at' => now()
+        ]);
+
+    return back();
+});
+
+Route::get('/kitchen/ready/{id}', function ($id) {
+
+    DB::table('orders')
+        ->where('id', $id)
+        ->update([
+            'status' => 'ready',
+            'updated_at' => now()
+        ]);
+
+    return back();
+});
+Route::post('/complete-order/{id}', function ($id) {
+
+    $order = DB::table('orders')
+        ->where('id', $id)
+        ->first();
+
+    if (!$order) {
+        return redirect('/dashboard');
+    }
+
+    DB::table('orders')
+        ->where('id', $id)
+        ->update([
+            'status' => 'completed',
+            'updated_at' => now()
+        ]);
+
+    DB::table('restaurant_tables')
+        ->where('id', $order->table_id)
+        ->update([
+            'status' => 'free',
+            'updated_at' => now()
+        ]);
+
+    session()->forget('active_table');
+
+    return redirect('/dashboard');
+
+})->middleware(['auth']);
 require __DIR__.'/auth.php';

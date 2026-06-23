@@ -28,8 +28,15 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        // 🔥 CHANGE HERE (goat screen)
-        return redirect('/login-success');
+        $user = $request->user();
+
+        // 🍽 Kitchen users go to kitchen screen
+        if ($user->user_type === 'kitchen') {
+            return redirect('/kitchen');
+        }
+
+        // 💰 Cashiers go to dashboard
+        return redirect('/dashboard');
     }
 
     /**
@@ -40,6 +47,7 @@ class AuthenticatedSessionController extends Controller
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
+
         $request->session()->regenerateToken();
 
         return redirect('/');

@@ -35,11 +35,23 @@
             <form method="POST" action="/pay-order/{{ $order->id }}" class="mt-3">
                 @csrf
 
-                <select name="payment_method" class="w-full p-2 text-black rounded">
-                    <option value="cash">Cash</option>
-                    <option value="mpesa">M-Pesa</option>
-                    <option value="card">Card</option>
-                </select>
+                <select class="payment_method w-full p-2 text-black rounded"
+        name="payment_method">
+
+    <option value="cash">Cash</option>
+    <option value="mpesa">M-Pesa</option>
+    <option value="card">Card</option>
+
+</select>
+
+<div class="mpesa_box" style="display:none; margin-top:10px;">
+
+    <input type="text"
+           name="phone_number"
+           placeholder="254712345678"
+           class="w-full p-2 text-black rounded">
+
+</div>
 
                 <button class="bg-green-500 text-black px-3 py-2 mt-2 rounded w-full">
                     Pay & Close Bill
@@ -77,6 +89,28 @@
 @endforelse
 
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
 
+   <script>
+document.querySelectorAll('.payment_method').forEach(function(select){
+
+    select.addEventListener('change', function(){
+
+        const box = this.parentElement.querySelector('.mpesa_box');
+
+        if(this.value === 'mpesa'){
+            box.style.display = 'block';
+        } else {
+            box.style.display = 'none';
+        }
+
+    });
+
+});
+</script>
+
+});
+</script>
 </body>
 </html>

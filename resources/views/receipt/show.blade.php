@@ -59,10 +59,22 @@
         Total: KES {{ $total }}
     </div>
 
-    <button onclick="window.print()"
-        class="mt-6 w-full bg-green-500 text-black py-2 rounded">
+    <form method="POST" action="/complete-order/{{ $order->id }}">
+    @csrf
+
+    <button type="submit"
+            onclick="window.print()"
+            style="
+                background: green;
+                color: white;
+                padding: 10px 20px;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+            ">
         Print Receipt
     </button>
+</form>
 
 </div>
 
