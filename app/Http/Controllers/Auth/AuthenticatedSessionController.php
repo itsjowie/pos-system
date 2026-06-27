@@ -35,8 +35,8 @@ class AuthenticatedSessionController extends Controller
             return redirect('/kitchen');
         }
 
-        // 💰 Cashiers go to dashboard
-        return redirect('/dashboard');
+        // 💰 Cashiers go to welcome screen
+return redirect('/login-success');
     }
 
     /**
