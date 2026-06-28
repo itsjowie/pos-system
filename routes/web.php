@@ -1,6 +1,7 @@
 <?php
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\MenuItemController;
+use App\Models\Inventory;
 
 /*
 |--------------------------------------------------------------------------
@@ -75,7 +76,16 @@ Route::post('/pay-order/{orderId}', function ($orderId) {
     if (!$order) {
          return redirect('/orders');
     }
+$orderItems = DB::table('order_items')
+    ->where('order_id', $orderId)
+    ->get();
 
+foreach ($orderItems as $item) {
+
+    DB::table('inventory')
+        ->where('name', $item->name)
+        ->decrement('quantity', $item->quantity);
+}
     DB::table('orders')
         ->where('id', $orderId)
         ->update([
@@ -279,4 +289,113 @@ Route::post('/complete-order/{id}', function ($id) {
     return redirect('/dashboard');
 
 })->middleware(['auth']);
+Route::get('/manager', function () {
+
+    if (!Auth::check()) {
+        return redirect('/login');
+    }
+
+    if (Auth::user()->user_type !== 'manager') {
+        abort(403);
+    }
+
+    $totalSales = DB::table('orders')
+        ->where('status', 'paid')
+        ->sum('total');
+
+    $totalOrders = DB::table('orders')->count();
+
+    $openOrders = DB::table('orders')
+        ->whereIn('status', ['open', 'preparing', 'ready'])
+        ->count();
+
+    $totalTables = DB::table('restaurant_tables')
+        ->count();
+
+    return view('manager.index', compact(
+        'totalSales',
+        'totalOrders',
+        'openOrders',
+        'totalTables'
+    ));
+
+});
+
+Route::get('/manager/sales', function () {
+
+    if (!Auth::check()) {
+        return redirect('/login');
+    }
+
+    if (Auth::user()->user_type !== 'manager') {
+        abort(403);
+    }
+
+    $todaySales = DB::table('orders')
+        ->where('status', 'paid')
+        ->whereDate('updated_at', today())
+        ->sum('total');
+
+    $cashSales = DB::table('orders')
+        ->where('status', 'paid')
+        ->where('payment_method', 'cash')
+        ->sum('total');
+
+    $mpesaSales = DB::table('orders')
+        ->where('status', 'paid')
+        ->where('payment_method', 'mpesa')
+        ->sum('total');
+
+    $cardSales = DB::table('orders')
+        ->where('status', 'paid')
+        ->where('payment_method', 'card')
+        ->sum('total');
+
+    $paidOrders = DB::table('orders')
+        ->where('status', 'paid')
+        ->count();
+
+    return view('manager.sales', compact(
+        'todaySales',
+        'cashSales',
+        'mpesaSales',
+        'cardSales',
+        'paidOrders'
+    ));
+
+})->middleware('auth');
+
+
+Route::get('/manager/inventory', function () {
+
+    if (!Auth::check()) {
+        return redirect('/login');
+    }
+
+    if (Auth::user()->user_type !== 'manager') {
+        abort(403);
+    }
+
+    $items = Inventory::all();
+
+    return view('manager.inventory', compact('items'));
+});
+Route::get('/manager/inventory/create', function () {
+
+    return view('manager.add_inventory');
+
+})->middleware('auth');
+
+Route::post('/manager/inventory/store', function (\Illuminate\Http\Request $request) {
+
+    Inventory::create([
+        'name' => $request->name,
+        'quantity' => $request->quantity,
+        'unit' => $request->unit,
+        'minimum_stock' => $request->minimum_stock,
+    ]);
+
+    return redirect('/manager/inventory');
+
+})->middleware('auth');
 require __DIR__.'/auth.php';

@@ -30,12 +30,17 @@ class AuthenticatedSessionController extends Controller
 
         $user = $request->user();
 
-        // 🍽 Kitchen users go to kitchen screen
+        // 🍽 Kitchen users
         if ($user->user_type === 'kitchen') {
             return redirect('/kitchen');
         }
 
-        // 💰 Cashiers go to welcome screen
+        // 📊 Manager users
+        if ($user->user_type === 'manager') {
+            return redirect('/manager');
+        }
+
+        // 💰 Cashier users
 return redirect('/login-success');
     }
 
